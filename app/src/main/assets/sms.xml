@@ -1,0 +1,8 @@
+﻿<?xml version='1.0' encoding='UTF-8' standalone='yes' ?>
+<!--File Created By SMS Backup & Restore v6.42 on 01/05/2017 22:16:50-->
+<?xml-stylesheet type="text/xsl" href="sms.xsl"?>
+<smses count="2">
+  <sms protocol="0" address="13585355351" date="1438513946592" type="2" subject="to 师父" body="师父!" toa="null" sc_toa="null" service_center="null" read="1" status="-1" locked="0" date_sent="0" readable_date="2015年8月2日 下午7:12:26" contact_name="孙教练" />
+  <sms protocol="0" address="13585355351" date="1438514946592" type="1" subject="to 悟空" body="悟空!" toa="null" sc_toa="null" service_center="null" read="1" status="-1" locked="0" date_sent="0" readable_date="2015年8月2日 下午7:12:26" contact_name="孙教练" />
+</smses>
+

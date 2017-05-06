@@ -16,7 +16,14 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.w3c.dom.Document;
+import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -27,6 +34,10 @@ import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
+
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 
 import a_vcard.android.provider.Contacts;
 import a_vcard.android.syncml.pim.VDataBuilder;
@@ -50,66 +61,86 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onStart() {
-        super.onStart();
-        /*****try read file from assets****/
-//        try {
-//            InputStreamReader inputReader = new InputStreamReader( getResources().getAssets().open("info.vcf") );
-//            BufferedReader bufReader = new BufferedReader(inputReader);
-//            String line="";
-//            String Result="";
-//            while((line = bufReader.readLine()) != null)
-//                Result += line;
-//            Log.i("main",Result);
-//        } catch (Exception e) {
-//            e.printStackTrace();
-//        }
-
-        /*ContactInfo.ContactHandler infoHandler = new ContactInfo.ContactHandler();
+    protected void onResume() {
+        super.onResume();
         try {
-
-            InputStream infoStream = null;
-            infoStream = getResources().getAssets().open("info.vcf");   //import form assets
-            //infoStream = new FileInputStream( (String)Environment.getExternalStorageDirectory()+"/info.vcf" );  //import form storage file
-            List<ContactInfo> infoList = infoHandler.restoreContacts(infoStream);
-
-            for(ContactInfo item : infoList){
-                Log.i("info",item.ContactsToString());          //log the infoList of contacts
-                infoHandler.addContacts(this,item);             //import contact one by one
-            }
-            showInfo.setText("import done");
+            InputStream infoStream = this.readFileFromAssets("info.vcf");
+            this.importContact(infoStream);
         } catch (Exception e) {
             e.printStackTrace();
-            showInfo.setText("error in importing");
-        }*/
+            showInfo.setText("errer in importing Contacts");
+            Log.i("errer log","errer in importing Contacts");
+            return;
+        }
 
-        ContentResolver resolver = getContentResolver();
-        ContentValues values = new ContentValues();
-        //protocol="0" address="SMS address:1" date="315982369064" type="1" subject="null" body="Message Number:1"
-        // toa="null" sc_toa="null" service_center="null" read="0" status="-1" locked="0" date_sent="0"
-        // readable_date="Jan 6, 1980 4:52:49 AM" contact_name="(Unknown)"
-        values.put("protocol", "0");
-        values.put("address", "18221208972");//指定短信的发件人
-        values.put("date", System.currentTimeMillis());
-        values.put("type", "1");
-        values.put("subject", "qianhuan");
-        values.put("body", "哈哈哈哈哈");
-        //values.put("toa", "null");
-        //values.put("sc_toa", "null");
-        //values.put("service_center", "null");
-        values.put("read", "1");
-        values.put("status", "-1");
-        //values.put("locked", "0");
-        values.put("date_sent", "0");
-        //values.put("readable_date","Jan 6, 1980 4:52:49 AM");
-        //values.put("contact_name", "(Unknown)");
-
-
-
-        resolver.insert(Uri.parse("content://sms"), values);
+        try {
+            InputStream smsStream = this.readFileFromAssets("sms.xml");
+            this.importSMS(smsStream);
+        } catch (Exception e) {
+            e.printStackTrace();
+            showInfo.setText("errer in importing Messages");
+            Log.i("errer log","errer in importing Messages");
+            return;
+        }
         showInfo.setText("import done");
     }
 
+
+    public InputStream readFileFromAssets(String file) throws Exception{
+        InputStream inputStream = null;
+        inputStream = getResources().getAssets().open(file);
+        //BufferedReader bufReader = new BufferedReader(new InputStreamReader(inputStream));
+        return inputStream;
+    }
+
+    public InputStream readFileFromStorage(String file) throws Exception{
+        InputStream inputStream = null;
+        inputStream = new FileInputStream(Environment.getExternalStorageDirectory() + file);
+        //BufferedReader bufReader = new BufferedReader(new InputStreamReader(inputStream));
+        return inputStream;
+    }
+
+    public void importContact(InputStream infoStream) throws Exception{
+        ContactInfo.ContactHandler infoHandler = new ContactInfo.ContactHandler();
+        List<ContactInfo> infoList = infoHandler.restoreContacts(infoStream);
+
+        for(ContactInfo item : infoList){
+            Log.i("Contacts",item.ContactsToString());          //log the infoList of contacts
+            infoHandler.addContacts(this,item);             //import contact one by one
+        }
+    }
+
+    public void importSMS(InputStream smsStream) throws Exception{
+        ContentResolver resolver = getContentResolver();
+        ContentValues values = new ContentValues();
+        Uri uri = Uri.parse("content://sms");
+
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        Document doc = builder.parse(smsStream);
+        Element rootElement = doc.getDocumentElement();
+        NodeList items = rootElement.getElementsByTagName("sms");
+        int num = Integer.valueOf(rootElement.getAttribute("count"));
+        for(int i=0;i<num;i++ ){
+            Node item = items.item(i);
+            NamedNodeMap attributes = item.getAttributes();
+
+            Log.i("Messages",attributes.getNamedItem("address").getNodeValue());
+            Log.i("Messages",attributes.getNamedItem("body").getNodeValue());
+
+            values.put("protocol", attributes.getNamedItem("protocol").getNodeValue());
+            values.put("address", attributes.getNamedItem("address").getNodeValue());
+            values.put("date", attributes.getNamedItem("date").getNodeValue());
+            values.put("type", attributes.getNamedItem("type").getNodeValue());
+            values.put("subject", attributes.getNamedItem("subject").getNodeValue());
+            values.put("body", attributes.getNamedItem("body").getNodeValue());
+            values.put("read", attributes.getNamedItem("read").getNodeValue());
+            values.put("status", attributes.getNamedItem("status").getNodeValue());
+
+            resolver.insert(uri, values);  //  add to content://sms
+            values.clear();
+        }
+    }
 }
 
 

@@ -270,10 +270,10 @@ public class ContactInfo {
 
             VCardParser parse = new VCardParser();
             VDataBuilder builder = new VDataBuilder();
-
-            //Log.i("Contact","before readfile");
+            //String file = Environment.getExternalStorageDirectory() + "/contacts.vcf";
+            //BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file), "UTF-8"));
             BufferedReader reader = new BufferedReader(new InputStreamReader(file, "UTF-8"));
-            //Log.i("Contact","readfile");
+
             String vcardString = "";
             String line;
             while((line = reader.readLine()) != null) {
